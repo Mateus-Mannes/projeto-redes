@@ -72,12 +72,20 @@ void setup() {
   // Conecta na rede
   Serial.print("Tentando conectar na rede SSID: ");
   WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
   Serial.println(ssid);
   WiFi.begin(ssid, pass);
+  int count = 0;
   while(WiFi.status() != WL_CONNECTED) {
     // Continua até conectar
     Serial.print(".");
-    delay(100);
+    delay(300);
+    count++;
+    if(count % 50 == 0) Serial.println();
+    if(count % 200 == 0) {
+      WiFi.disconnect();
+      WiFi.begin(ssid, pass);
+    }
   }
 
   Serial.println("Conectado na rede com sucesso !");
