@@ -29,11 +29,11 @@ const char brokerIp[] = "172.20.10.2"; // IP local público
 int brokerPort = 1883; // porta do mosquitto broker
 const char topic[] = "esp/devices"; // nome do tópico
 
-int scanTime = 3; // tempo do scan
+int scanTime = 2; // tempo do scan
 BLEScan* pBLEScan;
 
 int N = 2; // Constante do ambiente
-int baseRssi = -69; // RSSI de 1 metro
+int rssiBase = -64; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
@@ -89,22 +89,12 @@ void conectarBroker() {
     Serial.println();
 }
 
-void setupScan() 
-{
-    BLEDevice::init("");
-    pBLEScan = BLEDevice::getScan();
-    pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-    pBLEScan->setActiveScan(true);
-    pBLEScan->setInterval(100);
-    pBLEScan->setWindow(99);
-}
-
 void loop() {
     BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
     Serial.println("Scan completado!");
     pBLEScan->clearResults(); // Limpa a memória
     mqttClient.poll(); // Mantém a conexão com o broker MQTT ativa
-    delay(1000);
+    delay(500);
 }
 
 class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
@@ -112,37 +102,41 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
     void onResult(BLEAdvertisedDevice aparelhoEscaneado) {
         
         if (aparelhoEscaneado.getName().empty()) return; // Scaneia apenas os devices com nome
-        
-        std::string macAddress = aparelhoEscaneado.getAddress().toString();
+
+        std::string macAddress = aparelhoEscaneado.getAddress().toString().c_str();
         std::string nome = aparelhoEscaneado.getName().c_str();
         int rssi = aparelhoEscaneado.getRSSI();
-        rssiPorMac[macAddress].push_back(rssi);
+        rssisPorMac[macAddress].push_back(rssi);
         
         // Se houver valores de RSSI suficientes, estima distâncias
-        if (rssiPorMac[macAddress].size() >= 15) {
-          fload distancia = calcularDistancia(nome, macAddress);
+        if (rssisPorMac[macAddress].size() >= 20) {
+          float distancia = calcularDistancia(nome, macAddress);
           // Criando mensagem no formato "nome/MAC/distancia"
-          std::string mensagem = nome + "/" + macAddress + "/" + String(distanciaFinal, 2)
+          std::string mensagem = nome + "/" + macAddress + "/" + String(distancia, 2).c_str();
           enviarMensagemBroker(mensagem);
-          rssiPorMac[macAddress].clear(); // Limpa os valores de RSSI para o próximo scan
+          rssisPorMac[macAddress].clear(); // Limpa os valores de RSSI para o próximo scan
+        }
+        else 
+        {
+          Serial.printf("(%s - %s) ", nome.c_str(), macAddress.c_str());
         }
     }
 
     float calcularDistancia(std::string nome, std::string macAddress) 
     {
         // Calcula média e mediana de RSSI
-        float media = calculaMedia(rssiPorMac[macAddress]);
-        float mediana = calculaMediana(rssiPorMac[macAddress]);
+        float media = calculaMedia(rssisPorMac[macAddress]);
+        float mediana = calculaMediana(rssisPorMac[macAddress]);
 
         // Converte para distâncias
-        float distanciaMedia = pow(10, (baseRssi - meanRssi) / (10.0 * N));
-        float distanciaMediana = pow(10, (baseRssi - medianRssi) / (10.0 * N));
+        float distanciaMedia = pow(10, (rssiBase - media) / (10.0 * N));
+        float distanciaMediana = pow(10, (rssiBase - mediana) / (10.0 * N));
 
         // Estimativa final de distância (média entre as duas estimativas)
         float distanciaFinal = (distanciaMedia + distanciaMediana) / 2;
 
         Serial.printf("Distancia calculada (%s - %s), Média: %.2f, Mediana: %.2f, Final: %.2f.\n",
-            nome, macAddress, distanciaMedia, distanciaMediana, distanciaFinal);
+            nome.c_str(), macAddress.c_str(), distanciaMedia, distanciaMediana, distanciaFinal);
 
         return distanciaFinal;
     }
@@ -167,8 +161,19 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
 
     void enviarMensagemBroker(std::string mensagem) {
         mqttClient.beginMessage(topic);
-        mqttClient.print(mensagem);
+        mqttClient.print(mensagem.c_str());
         mqttClient.endMessage();
     }
 
 };
+
+void setupScan() 
+{
+    BLEDevice::init("");
+    pBLEScan = BLEDevice::getScan();
+    pBLEScan->setAdvertisedDeviceCallbacks(new AparelhosEscaneadosCallbacks());
+    pBLEScan->setActiveScan(true);
+    pBLEScan->setInterval(100);
+    pBLEScan->setWindow(99);
+}
+
