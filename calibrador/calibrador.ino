@@ -17,7 +17,12 @@ BLEScan* pBLEScan;
 
 std::vector<int> rssis;
 float rssiBase = 0;
-std::vector<int> Ns;
+
+float desvioN1 = 0;
+float desvioN2 = 0;
+float desvioN3 = 0;
+float desvioN4 = 0;
+float desvioN5 = 0;
 
 const int numeroAmostras = 50;
 
@@ -44,38 +49,51 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
 
         int rssi = aparelhoEscaneado.getRSSI();
         rssis.push_back(rssi);
-        Serial.printf("%d ", rssis.size());
+        Serial.printf("%d ", rssis.size() % numeroAmostras);
         
         // calula a média do rssi de 1 metro
         if (rssis.size() == numeroAmostras) {
           
           float mediaRssi = calculaMedia(rssis);
           float medianaRssi = calculaMediana(rssis);
-          rssiBase = (mediaRssi + medianaRssi) / 2.0;
+          rssiBase = medianaRssi;//(mediaRssi + medianaRssi) / 2.0;
           Serial.println();
           Serial.printf("RSSI base: %.2f\n", rssiBase);
 
-          Serial.println("Afaste o esp em 3 metros. Depois, aperte qualquer tecla para continuar...");
+          Serial.println("Afaste o esp em 5 metros. Depois, aperte qualquer tecla para continuar...");
           while (!Serial.available()) {
               delay(100); // Espera o usuário apertar uma tecla
           }
           Serial.readString();
           Serial.println("Coletando scans para N ");
         }
-        // Em seguida, calcula a média do N, para 3 metros de distancia
+        // Em seguida, calcula os desvios de distância para as 5 opções de N
         else if(rssis.size() > numeroAmostras && rssis.size() <= numeroAmostras * 2) 
         {
-            float N = (rssiBase - rssi) / (10 * log10(3));
-            if(N >= 2) Ns.push_back(N); // considera apenas valores maiores que 2
+            desvioN1 += abs(pow(10, (rssiBase - rssi) / (10.0 * 2.0)) - 5.0);
+            desvioN2 += abs(pow(10, (rssiBase - rssi) / (10.0 * 2.5)) - 5.0);
+            desvioN3 += abs(pow(10, (rssiBase - rssi) / (10.0 * 3.0)) - 5.0);
+            desvioN4 += abs(pow(10, (rssiBase - rssi) / (10.0 * 3.5)) - 5.0);
+            desvioN5 += abs(pow(10, (rssiBase - rssi) / (10.0 * 4.0)) - 5.0);
         }
-        // Finaliza o cálculo do N médio
+        // Finaliza mostrando os desvios
         else if(rssis.size() == (numeroAmostras * 2) + 1) 
         {
-            float NBase = calculaMedia(Ns);
             Serial.println();
-            Serial.printf("N base: %.2f (%d amostras maior ou iqual a 2)\n", NBase, Ns.size());
-            Ns.clear();
+            Serial.printf("Soma dos desvios para N1 (2.0): %.2f \n", desvioN1);
+            Serial.printf("Soma dos desvios para N2 (2.5): %.2f \n", desvioN2);
+            Serial.printf("Soma dos desvios para N3 (3.0): %.2f \n", desvioN3);
+            Serial.printf("Soma dos desvios para N4 (3.5): %.2f \n", desvioN4);
+            Serial.printf("Soma dos desvios para N5 (4.0): %.2f \n", desvioN5);
+            
+            // limpa variáveis
             rssis.clear();
+            desvioN1 = 0;
+            desvioN2 = 0;
+            desvioN3 = 0;
+            desvioN4 = 0;
+            desvioN5 = 0;
+            
 
             Serial.println("Aperte qualquer tecla para rodar novamente...");
             while (!Serial.available()) {

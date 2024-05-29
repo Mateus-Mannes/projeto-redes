@@ -29,11 +29,11 @@ const char brokerIp[] = "172.20.10.2"; // IP local público
 int brokerPort = 1883; // porta do mosquitto broker
 const char topic[] = "esp/devices"; // nome do tópico
 
-int scanTime = 1; // tempo do scan
+int scanTime = 6; // tempo do scan
 BLEScan* pBLEScan;
 
-float N = 2; // Constante do ambiente
-float rssiBase = -65; // RSSI de 1 metro
+float N = 2.5; // Constante do ambiente
+float rssiBase = -56; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
@@ -109,7 +109,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         rssisPorMac[macAddress].push_back(rssi);
         
         // Se houver valores de RSSI suficientes, estima distâncias
-        if (rssisPorMac[macAddress].size() >= 10) {
+        if (rssisPorMac[macAddress].size() >= 12) {
           float distancia = calcularDistancia(nome, macAddress);
           // Criando mensagem no formato "nome/MAC/distancia"
           std::string mensagem = nome + "/" + macAddress + "/" + String(distancia, 2).c_str();
@@ -133,7 +133,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         float distanciaMediana = pow(10, (rssiBase - mediana) / (10.0 * N));
 
         // Estimativa final de distância (média entre as duas estimativas)
-        float distanciaFinal = (distanciaMedia + distanciaMediana) / 2;
+        float distanciaFinal = distanciaMediana;//(distanciaMedia + distanciaMediana) / 2;
 
         Serial.printf("Distancia calculada (%s - %s), Média: %.2f, Mediana: %.2f, Final: %.2f.\n",
             nome.c_str(), macAddress.c_str(), distanciaMedia, distanciaMediana, distanciaFinal);
