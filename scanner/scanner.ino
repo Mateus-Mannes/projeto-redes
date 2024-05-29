@@ -29,19 +29,20 @@ const char brokerIp[] = "172.20.10.2"; // IP local público
 int brokerPort = 1883; // porta do mosquitto broker
 const char topic[] = "esp/devices"; // nome do tópico
 
-int scanTime = 2; // tempo do scan
+int scanTime = 1; // tempo do scan
 BLEScan* pBLEScan;
 
-int N = 2; // Constante do ambiente
-int rssiBase = -64; // RSSI de 1 metro
+float N = 2; // Constante do ambiente
+float rssiBase = -65; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     while (!Serial) {
         ; // Espera a porta conectar
     }
+    Serial.println();
     conectarRede();
     conectarBroker();
     setupScan();
@@ -94,7 +95,6 @@ void loop() {
     Serial.println("Scan completado!");
     pBLEScan->clearResults(); // Limpa a memória
     mqttClient.poll(); // Mantém a conexão com o broker MQTT ativa
-    delay(500);
 }
 
 class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
@@ -109,7 +109,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         rssisPorMac[macAddress].push_back(rssi);
         
         // Se houver valores de RSSI suficientes, estima distâncias
-        if (rssisPorMac[macAddress].size() >= 20) {
+        if (rssisPorMac[macAddress].size() >= 10) {
           float distancia = calcularDistancia(nome, macAddress);
           // Criando mensagem no formato "nome/MAC/distancia"
           std::string mensagem = nome + "/" + macAddress + "/" + String(distancia, 2).c_str();

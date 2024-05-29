@@ -12,62 +12,76 @@
 #include <BLEAdvertisedDevice.h>
 #include <algorithm> 
 
-int scanTime = 2; // tempo do scan
+int scanTime = 1; // tempo do scan
 BLEScan* pBLEScan;
 
 std::vector<int> rssis;
 float rssiBase = 0;
 std::vector<int> Ns;
 
+const int numeroAmostras = 50;
+
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     while (!Serial) {
         ; // Espera a porta conectar
     }
     setupScan();
+    Serial.println();
+    Serial.println("Coletando scans para RSSI");
 }
 
 void loop() {
     BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
-    Serial.println("Scan completado!");
     pBLEScan->clearResults(); // Limpa a memória
-    delay(500);
 }
 
 class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
     
     void onResult(BLEAdvertisedDevice aparelhoEscaneado) {
         
-        if (aparelhoEscaneado.getName() != "mateusmannes") return; // Scaneia apenas os devices com nome
+        if (aparelhoEscaneado.getName() != "Echo Buds 00TV") return; // Scaneia apenas os devices com nome específico
 
         int rssi = aparelhoEscaneado.getRSSI();
         rssis.push_back(rssi);
-        Serial.printf("mateusmannes escaneado %d ", rssis.size());
+        Serial.printf("%d ", rssis.size());
         
         // calula a média do rssi de 1 metro
-        if (rssis.size() == 50) {
+        if (rssis.size() == numeroAmostras) {
           
           float mediaRssi = calculaMedia(rssis);
           float medianaRssi = calculaMediana(rssis);
           rssiBase = (mediaRssi + medianaRssi) / 2.0;
-          Serial.printf("Média RSSI: %.2f\n", rssiBase);
+          Serial.println();
+          Serial.printf("RSSI base: %.2f\n", rssiBase);
 
           Serial.println("Afaste o esp em 3 metros. Depois, aperte qualquer tecla para continuar...");
           while (!Serial.available()) {
               delay(100); // Espera o usuário apertar uma tecla
           }
+          Serial.readString();
+          Serial.println("Coletando scans para N ");
         }
         // Em seguida, calcula a média do N, para 3 metros de distancia
-        else if(rssis.size() > 50 && rssis.size() <= 100) 
+        else if(rssis.size() > numeroAmostras && rssis.size() <= numeroAmostras * 2) 
         {
             float N = (rssiBase - rssi) / (10 * log10(3));
-            Ns.push_back(N);
+            if(N >= 2) Ns.push_back(N); // considera apenas valores maiores que 2
         }
-        else if(rssis.size() == 101) 
+        // Finaliza o cálculo do N médio
+        else if(rssis.size() == (numeroAmostras * 2) + 1) 
         {
-            float mediaN = calculaMedia(Ns);
-            Serial.printf("Média N: %.2f\n", mediaN);
+            float NBase = calculaMedia(Ns);
+            Serial.println();
+            Serial.printf("N base: %.2f (%d amostras maior ou iqual a 2)\n", NBase, Ns.size());
             Ns.clear();
+            rssis.clear();
+
+            Serial.println("Aperte qualquer tecla para rodar novamente...");
+            while (!Serial.available()) {
+                delay(100);
+            }
+            Serial.readString();
         }
     }
 
