@@ -29,11 +29,11 @@ const char brokerIp[] = "172.20.10.2"; // IP local público
 int brokerPort = 1883; // porta do mosquitto broker
 const char topic[] = "esp/devices"; // nome do tópico
 
-int scanTime = 6; // tempo do scan
+int scanTime = 1; // tempo do scan
 BLEScan* pBLEScan;
 
-float N = 2.5; // Constante do ambiente
-float rssiBase = -56; // RSSI de 1 metro
+float N = 2.0; // Constante do ambiente
+float rssiBase = -60.0; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
@@ -133,8 +133,9 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         float distanciaMediana = pow(10, (rssiBase - mediana) / (10.0 * N));
 
         // Estimativa final de distância (média entre as duas estimativas)
-        float distanciaFinal = distanciaMediana;//(distanciaMedia + distanciaMediana) / 2;
+        float distanciaFinal = (distanciaMedia + distanciaMediana) / 2;
 
+        Serial.println();
         Serial.printf("Distancia calculada (%s - %s), Média: %.2f, Mediana: %.2f, Final: %.2f.\n",
             nome.c_str(), macAddress.c_str(), distanciaMedia, distanciaMediana, distanciaFinal);
 
@@ -142,11 +143,11 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
 
     // Função auxiliar para calcular a média
-    float calculaMedia(const std::vector<int>& valores) {
+    float calculaMedia(std::vector<int>& valores) {
         int soma = 0;
-        for(int i = 0; i < valores.size(); i++)
+        for(int i = 8; i < valores.size(); i++)
             soma += valores[i];
-        return static_cast<float>(soma) / valores.size();
+        return static_cast<float>(soma) / (valores.size() - 8);
     }
 
     // Função auxiliar para calcular a mediana

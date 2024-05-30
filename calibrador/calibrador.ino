@@ -26,6 +26,11 @@ float desvioN5 = 0;
 
 const int numeroAmostras = 50;
 
+// Nomes dos dispositivos
+// Echo Buds 00TV
+// Logi M550 L
+// Wave Keys 670
+
 void setup() {
     Serial.begin(115200);
     while (!Serial) {
@@ -49,14 +54,14 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
 
         int rssi = aparelhoEscaneado.getRSSI();
         rssis.push_back(rssi);
-        Serial.printf("%d ", rssis.size() % numeroAmostras);
+        Serial.printf("%d ", rssi);
         
         // calula a média do rssi de 1 metro
         if (rssis.size() == numeroAmostras) {
           
           float mediaRssi = calculaMedia(rssis);
           float medianaRssi = calculaMediana(rssis);
-          rssiBase = medianaRssi;//(mediaRssi + medianaRssi) / 2.0;
+          rssiBase = (mediaRssi + medianaRssi) / 2.0;
           Serial.println();
           Serial.printf("RSSI base: %.2f\n", rssiBase);
 
