@@ -19,6 +19,9 @@
 #include <WiFi.h>
 #include <algorithm> // para ordenação para calcular a mediana
 
+char dispositivo1[] = "Logi M550 L";
+char dispositivo2[] = "Echo Buds 00TV";
+
 char nomeRede[] = "iPhone de Mateus"; // SSID da rede (usar a do celular)
 char senhaRede[] = "mateusmm"; // senha da rede
 
@@ -33,7 +36,7 @@ int scanTime = 1; // tempo do scan
 BLEScan* pBLEScan;
 
 float N = 4.0; // Constante do ambiente
-float rssiBase = -53.0; // RSSI de 1 metro
+float rssiBase = -50.0; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
@@ -101,7 +104,9 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
     
     void onResult(BLEAdvertisedDevice aparelhoEscaneado) {
         
-        if (aparelhoEscaneado.getName().empty()) return; // Scaneia apenas os devices com nome
+        // Ignora outros dispositivos 
+        if (aparelhoEscaneado.getName() != dispositivo1 &&
+            aparelhoEscaneado.getName() != dispositivo2) return; 
 
         std::string macAddress = aparelhoEscaneado.getAddress().toString().c_str();
         std::string nome = aparelhoEscaneado.getName().c_str();
@@ -112,7 +117,9 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         if (rssisPorMac[macAddress].size() >= 9) {
           float distancia = calcularDistancia(nome, macAddress);
           // Criando mensagem no formato "nome/MAC/distancia"
-          std::string mensagem = nome + "/" + macAddress + "/" + String(distancia, 2).c_str();
+          std::string mensagem = "Nome: " + nome + "\n" +
+              "MAC: " + macAddress + "\n" + 
+              "Distância: " + String(distancia, 2).c_str() + "m";
           enviarMensagemBroker(mensagem);
           rssisPorMac[macAddress].clear(); // Limpa os valores de RSSI para o próximo scan
         }

@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <vector>
 
-char nomeDispositivo[] = "Logi M550 L";
+char nomeDispositivo[] = "Echo Buds 00TV";
 // Nomes dos dispositivos
 // Echo Buds 00TV
 // Logi M550 L
