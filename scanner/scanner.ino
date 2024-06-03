@@ -32,8 +32,8 @@ const char topic[] = "esp/devices"; // nome do tópico
 int scanTime = 1; // tempo do scan
 BLEScan* pBLEScan;
 
-float N = 3.5; // Constante do ambiente
-float rssiBase = -56.0; // RSSI de 1 metro
+float N = 4.0; // Constante do ambiente
+float rssiBase = -53.0; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
@@ -109,7 +109,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         rssisPorMac[macAddress].push_back(rssi);
         
         // Se houver valores de RSSI suficientes, estima distâncias
-        if (rssisPorMac[macAddress].size() >= 21) {
+        if (rssisPorMac[macAddress].size() >= 9) {
           float distancia = calcularDistancia(nome, macAddress);
           // Criando mensagem no formato "nome/MAC/distancia"
           std::string mensagem = nome + "/" + macAddress + "/" + String(distancia, 2).c_str();
@@ -126,7 +126,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
     {
         // Calcula média e mediana de RSSI
         float media = calculaMedia(rssisPorMac[macAddress]);
-        float mediana = calculaMedianaMenor(rssisPorMac[macAddress]);
+        float mediana = calculaMediana(rssisPorMac[macAddress]);
 
         // Converte para distâncias
         float distanciaMedia = pow(10, (rssiBase - media) / (10.0 * N));
@@ -158,33 +158,6 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         } else {
             return valores[valores.size()/2];
         }
-    }
-
-    float calculaMedianaMenor(std::vector<int>& valores) {
-        std::sort(valores.begin(), valores.end());
-        int tamanho = valores.size();
-        int metade = (tamanho % 2 == 0) ? (tamanho / 2) : (tamanho / 2 + 1);
-        int valor = valores[metade];
-        while(metade > 0) {
-          if(valores[metade-1] < valor) return valores[metade-1];
-          metade--;
-        }
-        return valores[metade];
-        // int soma = 0;
-        // for(int i = 0; i <= metade; i++)
-        //     soma += valores[i];
-        // return static_cast<float>(soma) / (valores.size() - metade);
-
-
-        // std::vector<int> metadeMenor(valores.begin(), valores.end() - inicioMetadeMenor);
-
-        // // Calcula a mediana da metade menor
-        // int tamanhoMetadeMenor = metadeMenor.size();
-        // if (tamanhoMetadeMenor % 2 == 0) {
-        //     return (metadeMenor[tamanhoMetadeMenor / 2 - 1] + metadeMenor[tamanhoMetadeMenor / 2]) / 2.0;
-        // } else {
-        //     return metadeMenor[tamanhoMetadeMenor / 2];
-        // }
     }
 
     void enviarMensagemBroker(std::string mensagem) {
