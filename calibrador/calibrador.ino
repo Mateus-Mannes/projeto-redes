@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <vector>
 
-char nomeDispositivo[] = "Echo Buds 00TV";
+// liberar porta: sudo chmod 666 /dev/ttyUSB0
+
+char nomeDispositivo[] = "Logi M550 L";
 // Nomes dos dispositivos
 // Echo Buds 00TV
 // Logi M550 L
@@ -16,8 +18,8 @@ BLEScan* pBLEScan;
 
 std::vector<int> rssis;
 
-const int numeroAmostras = 35;
-const int maxDistancia = 6;
+const int numeroAmostras = 30;
+const int maxDistancia = 4;
 const int minRssiBase = 30;
 const int maxRssiBase = 85;
 const int numRssiBases = maxRssiBase - minRssiBase + 1;
