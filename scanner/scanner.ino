@@ -35,8 +35,8 @@ const char topic[] = "esp/devices"; // nome do tópico
 int scanTime = 1; // tempo do scan
 BLEScan* pBLEScan;
 
-float N = 3.0; // Constante do ambiente
-float rssiBase = -59.0; // RSSI de 1 metro
+float N = 4.0; // Constante do ambiente
+float rssiBase = -54.0; // RSSI de 1 metro
 
 std::map<std::string, std::vector<int>> rssisPorMac; // armazena valores de RSSI separados por MAC
 
@@ -114,7 +114,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         rssisPorMac[macAddress].push_back(rssi);
         
         // Se houver valores de RSSI suficientes, estima distâncias
-        if (rssisPorMac[macAddress].size() >= 9) {
+        if (rssisPorMac[macAddress].size() >= 7) {
           float distancia = calcularDistancia(nome, macAddress);
           // Criando mensagem no formato "nome/MAC/distancia"
           std::string mensagem = "Nome: " + nome + "\n" +
@@ -140,7 +140,7 @@ class AparelhosEscaneadosCallbacks : public BLEAdvertisedDeviceCallbacks {
         float distanciaMediana = pow(10, (rssiBase - mediana) / (10.0 * N));
 
         // Estimativa final de distância (média entre as duas estimativas)
-        float distanciaFinal = (distanciaMedia + distanciaMediana) / 2;
+        float distanciaFinal = distanciaMediana;//(distanciaMedia + distanciaMediana) / 2;
 
         Serial.println();
         Serial.printf("Distancia calculada (%s - %s), Média: %.2f, Mediana: %.2f, Final: %.2f.\n",
@@ -184,4 +184,3 @@ void setupScan()
     pBLEScan->setInterval(100);
     pBLEScan->setWindow(99);
 }
-
