@@ -1,43 +1,29 @@
 # projeto-redes
 Projeto redes UDESC
 
-O desafio do projeto consiste em desenvolver um localizador de objetos em uma distância curta de
-10 metros usando Bluetooth Low Energy com monitoramento IoT e com o protocolo MQTT.
-Deverá ser desenvolvida uma aplicação que permita a localização baseada na proximidade de um
-objeto dentro do raio do Raio Signal Strenght Indicator (RSSI) gerado pelo campo de alcance do
-Bluetooth Low Energy fornecido pelo microcontrolador ESP32.
-Como objetos podem ser utilizados por exemplo, o Bluetooth Low Energy (BLE) presente nas
-pulseiras inteligentes, relógios inteligentes e nos celulares, pois apresentam o recurso que detecta o
-sinal através do cálculo da distância em que o ESP32 se encontra, gerando um raio e a localização
-do objeto nesse raio.
-A partir do desenvolvimento do localizador que utiliza a comunicação Bluetooth Low Energy
-(BLE) para obter a distância do raio de acesso, mensagens devem ser enviadas por meio de IoT,
-usando-se o protocolo MQTT (Message Queuing Telemetry Transport) com o intuito de transmitir
-as informações sobre o número de objetos encontrados e a distância entre eles. 
-
-
+Este projeto é uma solução integrada que utiliza um microcontrolador ESP32 para varrer dispositivos Bluetooth Low Energy (BLE) e comunicar as informações obtidas através de um broker MQTT. Ele é composto por dois arquivos principais: `scanner.ino` para a operação de varredura e comunicação, e `calibrador.ino` para calibração dos parâmetros de distância. O objetivo é primeiro utilizar o `calibrador.ino` para determinar os melhores valores de `N` e `rssiBase`, que são essenciais para a precisão na estimativa de distância dos dispositivos BLE. Após a calibração, esses valores devem ser inseridos no código `scanner.ino` para realizar a varredura efetiva e comunicação dos dados.
 
 ## Arquivos do Projeto
 
 ### scanner.ino
 
-Este arquivo contém o código para:
+Responsável por:
 
 - Conectar o ESP32 a uma rede Wi-Fi.
-- Estabelecer conexão com um broker MQTT.
-- Realizar varreduras BLE contínuas, buscando dispositivos específicos.
-- Calcular a distância dos dispositivos com base no RSSI e enviar esses dados via MQTT.
+- Estabelecer uma conexão com um broker MQTT.
+- Realizar varreduras BLE contínuas de dispositivos específicos.
+- Calcular a distância baseada no RSSI e enviar esses dados via MQTT usando os parâmetros calibrados.
 
 ### calibrador.ino
 
-Este arquivo é usado para calibrar os parâmetros `rssiBase` e `N`, que são críticos para a precisão na estimativa de distâncias dos dispositivos BLE. O calibrador realiza varreduras para coletar dados de RSSI em diferentes distâncias predefinidas e ajusta os parâmetros para minimizar o desvio das estimativas de distância.
+Utilizado para ajustar os parâmetros `rssiBase` e `N`. Este arquivo realiza varreduras para coletar dados de RSSI em diferentes distâncias predefinidas, ajustando os parâmetros para minimizar o desvio das estimativas de distância. Os resultados desta calibração são essenciais para a configuração do arquivo `scanner.ino`.
 
 ## Configuração e Uso
 
 ### Pré-requisitos
 
 - Hardware:
-    - ESP32
+    - ESP32 Dev Module
     - Computador com Arduino IDE instalado
 - Software:
     - Bibliotecas do Arduino:
@@ -53,11 +39,12 @@ Este arquivo é usado para calibrar os parâmetros `rssiBase` e `N`, que são cr
 
 ### Operação
 
-1. **scanner.ino**:
-    - Modifique as variáveis `nomeRede` e `senhaRede` para corresponder às suas configurações de Wi-Fi.
-    - Ajuste `brokerIp` e `brokerPort` para apontar para o seu broker MQTT.
+- **calibrador.ino**:
+    - Execute este código primeiro para determinar os valores ótimos de `rssiBase` e `N`.
+    - Siga as instruções no monitor serial para calibrar corretamente os parâmetros.
+    - Após a calibração, anote os valores obtidos para `rssiBase` e `N`.
+- **scanner.ino**:
+    - Com os valores de `rssiBase` e `N` obtidos, atualize as variáveis correspondentes no arquivo `scanner.ino`.
+    - Modifique também as variáveis `nomeRede`, `senhaRede`, `brokerIp`, e `brokerPort` para corresponder às suas configurações de rede e MQTT.
     - Inicie o ESP32 e observe a saída no monitor serial para verificar a conexão com a rede e o broker.
-    - A distância estimada dos dispositivos será enviada automaticamente para o tópico MQTT configurado.
-2. **calibrador.ino**:
-    - Execute este código para determinar os melhores valores de `rssiBase` e `N` antes de utilizar o `scanner.ino` para garantir a precisão.
-    - Siga as instruções no monitor serial para posicionar o dispositivo a diferentes distâncias.
+    - As distâncias estimadas dos dispositivos BLE detectados serão enviadas ao tópico MQTT configurado.
